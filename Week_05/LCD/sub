@@ -1,0 +1,73 @@
+self.lcd_write(0xD4)
+
+        for char in string:
+            self.lcd_write_char(ord(char))
+
+    # Clear display
+    def lcd_clear(self):
+        self.lcd_write(self.LCD_CLEARDISPLAY)
+        self.lcd_write(self.LCD_RETURNHOME)
+
+    # Backlight control
+    def backlight(self, state):
+        if state:
+            self.lcd_backlight = self.LCD_BACKLIGHT
+        else:
+            self.lcd_backlight = self.LCD_NOBACKLIGHT
+        self.bus.write_byte(self.ADDRESS, self.lcd_backlight)
+
+
+class LCDSubscriber(Node):
+    def __init__(self):
+        super().__init__('lcd_subscriber')
+        self.subscription = self.create_subscription(
+            String,
+            'lcd_data',
+            self.listener_callback,
+            10)
+        self.get_logger().info('LCD Subscriber Node started')
+        
+        # Khởi tạo LCD
+        try:
+            self.lcd = LCD()
+            self.lcd.lcd_clear()
+            self.get_logger().info('LCD initialized successfully')
+        except Exception as e:
+            self.get_logger().error(f'Error initializing LCD: {str(e)}')
+            raise e
+
+    def listener_callback(self, msg):
+        self.get_logger().info(f'Received: "{msg.data}"')
+        try:
+            # Xóa màn hình LCD
+            self.lcd.lcd_clear()
+            
+            # Tách dữ liệu thành các dòng
+            lines = msg.data.split('|')
+            
+            # Hiển thị từng dòng lên LCD
+            for i, line in enumerate(lines, start=1):
+                if i <= 4:  # LCD 20x4 có 4 dòng
+                    self.lcd.lcd_display_string(line, i)
+                    self.get_logger().info(f'Displayed on line {i}: "{line}"')
+        except Exception as e:
+            self.get_logger().error(f'Error displaying on LCD: {str(e)}')
+
+
+def main(args=None):
+    rclpy.init(args=args)
+    lcd_subscriber = LCDSubscriber()
+    
+    try:
+        rclpy.spin(lcd_subscriber)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        # Xóa LCD khi kết thúc
+        lcd_subscriber.lcd.lcd_clear()
+        lcd_subscriber.destroy_node()
+        rclpy.shutdown()
+
+
+if __name__ == '__main__':
+    main()
