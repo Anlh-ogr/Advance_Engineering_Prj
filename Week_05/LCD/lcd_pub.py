@@ -10,12 +10,12 @@ from rclpy.node import Node # type: ignore
 from std_msgs.msg import String # type: ignore
 import json # use to convert dictionary to string
 
-
 class LCDPublisher(Node):
     def __init__(self):
         super().__init__('lcd_publish')
         self.publisher_ = self.create_publisher(String, 'lcd_display', 10)
         self.message_data = ("MaiQuocHuy\nNguyen.L.HoangAn\nLeNgocBaoKha")
+        self.timer = self.create_timer(5.0, self.publisher_message)
 
     def publisher_message(self):
         msg = String()
@@ -24,10 +24,10 @@ class LCDPublisher(Node):
         self.get_logger().info(f"Published: {msg.data}")
         
     def stop_and_cleanup(self):
-        msg = String()
-        msg.data = json.dumps({'m1' : 'stop', 'm2' : 'stop'})
-        self.publisher_.publish(msg)
-        self.get_logger().info(f"Sending stop message: {msg.data}")
+        stop_msg = String()
+        stop_msg.data = json.dumps({'m1' : 'stop', 'm2' : 'stop'})
+        self.publisher_.publish(stop_msg)
+        self.get_logger().info(f"Sending stop message: {stop_msg.data}")
         self.destroy_node()
         
 def main(args=None):
@@ -35,12 +35,9 @@ def main(args=None):
     lcd_publisher = LCDPublisher()
     
     try:
-        lcd_publisher.publisher_message()
         rclpy.spin(lcd_publisher)
-    
     except KeyboardInterrupt:
         lcd_publisher.get_logger().info('Keyboard interrupt, shutting down...')
-    
     finally:
         lcd_publisher.stop_and_cleanup()
         rclpy.shutdown()
