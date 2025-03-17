@@ -1,5 +1,5 @@
-from lauch import LaunchDescription # type: ignore
-from lauch_ros.actions import Node  # type: ignore
+from launch import LaunchDescription # type: ignore
+from launch_ros.actions import Node  # type: ignore
 
 def generate_launch_description():
     return LaunchDescription([
