@@ -6,14 +6,14 @@ def generate_launch_description():
         Node(
             package='',
             node_namespace='',
-            node_executable = 'talker',
+            node_executable = 'publisher',
             output = 'screen',
             node_name = 'sim_1'
         ),
         Node(
             package='',
             node_namespace='',
-            node_executable = 'listener',
+            node_executable = 'subscriber',
             output = 'screen',
             node_name = 'sim_2'
         )
