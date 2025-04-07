@@ -17,7 +17,12 @@ class GamepadDataPublisher(Node):
         events = get_gamepad()
         for event in events:
             if event.ev_type in ["Key", "Absolute"]:
-                if event.code in ["ABS_Y", "ABS_X", "ABS_Z", "ABS_RZ", "BTN_TL", "BTN_TR"]:
+                if event.code in ["BTN_NORTH", "BTN_SOUTH", "BTN_EAST", "BTN_WEST",
+                                  "BTN_TL", "BTN_TR", "BTN_TL2", "BTN_TR2",
+                                  "BTN_SELECT", "BTN_START",
+                                  "BTN_THUMBL", "BTN_THUMBR",
+                                  "ABS_HAT0Y", "ABS_HAT0X",
+                                  "ABS_Y", "ABS_X", "ABS_Z", "ABS_RZ"]:
                     msg = String()
                     data = {event.code: event.state} # Create a dictionary
                     msg.data = json.dumps(data)      # Convert to JSON
