@@ -13,8 +13,12 @@ class ColorDetectionPublisher(Node):
         super().__init__('color_detection_publisher')
         self.publisher_ = self.create_publisher(String, '/color_info', 10)
         self.timer = self.create_timer(0.1, self.timer_callback)
+        
         self.cap = cv2.VideoCapture(0)
-        self.get_logger().info("Camera initialized")
+        if not self.cap.isOpened():
+            self.get_logger().error("Failed to open camera")
+            raise RuntimeError("Camera initialization failed")
+        self.get_logger().info("Camera initialized successfully")
         
     def timer_callback(self):
         ret, frame = self.cap.read()
@@ -35,13 +39,17 @@ class ColorDetectionPublisher(Node):
             mask = cv2.inRange(hsv, lower, upper)
             contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             
+            if not contours:
+                self.get_logger().info(f"No {color} objects detected")
+                continue
+
             for cnt in contours:
                 area = cv2.contourArea(cnt)
                 # loc dien tich khoi 3cmx3cmx3cm
                 if 500 < area < 1500:
                     x, y, w, h = cv2.boundingRect(cnt)
                     msg = String()
-                    msg.data = f"Color: {color}, Area: {area}, Position: ({x}, {y})"
+                    msg.data = f"Color: {color}, Area: {area:.2f}, Position: ({x}, {y})"
                     self.publisher_.publish(msg)
                     self.get_logger().info(f"Detected: {msg.data}")
                     cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
@@ -51,17 +59,23 @@ class ColorDetectionPublisher(Node):
         cv2.waitKey(1)
     
     def destroy_node(self):
+        self.get_logger().info("Releasing camera and closing windows")
         self.cap.release()
         cv2.destroyAllWindows()
         super().destroy_node()
         
 def main(args=None):
-    rclpy.init()
-    node = ColorDetectionPublisher()
+    rclpy.init(args=args)
     try:
+        node = ColorDetectionPublisher()
         rclpy.spin(node)
+    except RuntimeError as e:
+        print(f"Error: {e}")
     except KeyboardInterrupt:
-        node.destroy_node()
+        pass
+    finally:
+        if 'node' in locals():
+            node.destroy_node()
         rclpy.shutdown()
         
 if __name__ == '__main__':
