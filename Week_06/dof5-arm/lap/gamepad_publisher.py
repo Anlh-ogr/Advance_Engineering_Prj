@@ -1,108 +1,105 @@
-import rclpy                    # type: ignore
-import math
-from rclpy.node import Node     # type: ignore
-from std_msgs.msg import String # type: ignore
-from inputs import get_gamepad  # type: ignore
+import rclpy                        # type: ignore
+from rclpy.node import Node         # type: ignore
+from std_msgs.msg import String     # type: ignore
+from inputs import get_gamepad      # type: ignore
+
 
 class GamePadPublisher(Node):
     def __init__(self):
         super().__init__('gamepad_publisher')
         self.publisher_ = self.create_publisher(String, '/robot_arm_control', 10)
-        self.timer = self.create_timer(0.01, self.timer_callback)    # 100Hz
+        self.timer = self.create_timer(0.01, self.timer_callback)  # 100Hz
 
-        # 500 - 2500 microseconds (1ms - 2.5ms) | 1500: center (neutral position)
-        self.base0, self.base1, self.base2, self.base3, self.base4, self.base5 = 1500, 1500, 1500, 1500, 1500, 1500
-        # btn_north(x), btn_west(y), btn_east(b), btn_south(a), abs_hat0y(dpad_y)
-        self.btn_x, self.btn_y, self.btn_b, self.btn_a, self.dpad_y = 0, 0, 0, 0, 0
-        
-        # thong so joystick + goc prev + flag cap nhat goc
-        self.axis_x, self.axis_y = 0.0, 0.0
-        self.prev_angle, self.first_reading = 0.0, True
-
+        # khoi tao servo, giu servo4 mac dinh de du phong
+        self.servo0 = self.servo1 = self.servo2 = self.servo3 = self.servo4 = self.servo5 = 1500
+        # nut gamepad
+        self.btn_x, self.btn_y, self.btn_b, self.btn_a, self.dpad_x, self.dpad_y = 0, 0, 0, 0, 0, 0
         self.get_logger().info("Gamepad publisher initialized")
 
     def timer_callback(self):
         try:
             events = get_gamepad()
         except Exception as e:
-            self.get_logger().warning(f"Error reading gamepad: {e}")
+            self.get_logger().error(f"Gamepad not connected: {e}. Shutting down...")
+            rclpy.shutdown()
             return
         
         for event in events:
             if event.ev_type in ["Key", "Absolute"]:
-                # read joystick
-                if event.code == "ABS_X":
-                    self.axis_x = event.state / 32768.0     # convert to -1 to 1
-                if event.code == "ABS_Y":
-                    self.axis_y = -event.state / 32768.0    # convert to -1 to 1
-
-                # read button
-                if event.code == "BTN_NORTH":
-                    self.btn_x = event.state
+                if event.code == "ABS_HAT0X":
+                    self.dpad_x = event.state
+                if event.code == "ABS_HAT0Y":
+                    self.dpad_y = event.state
                 if event.code == "BTN_WEST":
+                    self.btn_x = event.state
+                if event.code == "BTN_NORTH":
                     self.btn_y = event.state
                 if event.code == "BTN_EAST":
                     self.btn_b = event.state
                 if event.code == "BTN_SOUTH":
                     self.btn_a = event.state
-                    self.base5 = 1500 if self.btn_a == 0 else 2000
-                if event.code == "ABS_HAT0Y":
-                    self.dpad_y = event.state
-
-        # joystick control (0-360)
-        magnitude = math.sqrt(self.axis_x**2 + self.axis_y**2)
-        # deadzone
-        if magnitude > 0.1:
-            angle_rad = math.atan2(self.axis_y, self.axis_x)
-            current_angle = math.degrees(angle_rad)
-            if current_angle < 0:
-                current_angle += 360.0
-            
-            # xac dinh goc xoay
-            if not self.first_reading:
-                delta_angle = current_angle - self.prev_angle
-                
-                # check truong hop vuot qua 0/360
-                if delta_angle > 180.0:
-                    delta_angle -= 360.0
-                elif delta_angle < -180.0:
-                    delta_angle += 360.0
-                    
-                # xoay theo chieu kim dong ho
-                step = 20
-                if delta_angle > 0:
-                    self.base0 = min(2500, self.base0 + step)
-                # xoay nguoc chieu kim dong ho
-                elif delta_angle < 0:
-                    self.base0 = max(500, self.base0 - step)
-            
-            # cap nhat goc
-            self.prev_angle = current_angle
-            self.first_reading = False
-        else:
-            self.first_reading = True
         
-        # control base1, base2, base3 with buttons (-1) up, (1) down
         step = 60
+        hold_multiplier = 1.0
+
+        # xu ly hold dpad_x
+        if self.dpad_x != getattr(self, 'last_dpad_x', 0):
+            self.hold_time_x = 0.0
+        self.last_dpad_x = self.dpad_x
+        if self.dpad_x != 0:
+            if not hasattr(self, 'hold_time_x'):
+                self.hold_time_x = 0.0
+            self.hold_time_x += 1
+            if self.hold_time_x > 50:
+                hold_multiplier = 2.0
+        else:
+            self.hold_time_x = 0.0
+
+        # xu ly hold dpad_y
+        if self.dpad_y != getattr(self, 'last_dpad_y', 0):
+            self.hold_time_y = 0.0
+        self.last_dpad_y = self.dpad_y
+        if self.dpad_y != 0:
+            if not hasattr(self, 'hold_time_y'):
+                self.hold_time_y = 0.0
+            self.hold_time_y += 1
+            if self.hold_time_y > 50:
+                hold_multiplier = 2.0
+        else:
+            self.hold_time_y = 0.0
+
+        # dieu khien servo0 (trai/phai)
+        if self.dpad_x == -1:
+            self.servo0 = max(500, self.servo0 - int(step * hold_multiplier))
+        if self.dpad_x == 1:
+            self.servo0 = min(2500, self.servo0 + int(step * hold_multiplier))
+
+        # dieu khien servo1, servo2, servo3 (len/xuong)
         if self.btn_x == 1 and self.dpad_y != 0:
-            self.base1 = max(500, min(2500, self.base1 - (self.dpad_y * step)))
+            self.servo1 = max(500, min(2500, self.servo1 - int(self.dpad_y * step * hold_multiplier)))
         if self.btn_y == 1 and self.dpad_y != 0:
-            self.base2 = max(500, min(2500, self.base2 - (self.dpad_y * step)))
+            self.servo2 = max(500, min(2500, self.servo2 - int(self.dpad_y * step * hold_multiplier)))
         if self.btn_b == 1 and self.dpad_y != 0:
-            self.base3 = max(500, min(2500, self.base3 + (self.dpad_y * step)))
-        
-        # create a message and publish it
-        control_msg = f"#0P{self.base0}#1P{self.base1}#2P{self.base2}#3P{self.base3}#5P{self.base5}\r\n"            
-        msg = String()
-        msg.data = control_msg
-        
-        # publish the message
-        self.publisher_.publish(msg)
-        self.get_logger().info(f'Publishing: "{msg.data}"')
-            
+            self.servo3 = max(500, min(2500, self.servo3 + int(self.dpad_y * step * hold_multiplier)))
+
+        # dieu khien servo5 (gap)
+        if self.btn_a == 1 and (not hasattr(self, 'last_btn_a') or self.last_btn_a != self.btn_a):
+            self.servo5 = 2000 if self.servo5 == 1000 else 1000
+        self.last_btn_a = self.btn_a
+
+        # tao va publish lenh, bao gom servo4 mac dinh
+        new_msg = f"#0P{self.servo0}#1P{self.servo1}#2P{self.servo2}#3P{self.servo3}#4P{self.servo4}#5P{self.servo5}\r\n"
+        if not hasattr(self, 'last_msg') or self.last_msg != new_msg:
+            msg = String()
+            msg.data = new_msg
+            self.publisher_.publish(msg)
+            self.get_logger().info(f'Publishing: "{msg.data}"')
+            self.last_msg = new_msg
+
     def destroy_node(self):
-        self.get_logger().info("Shutting down gamepad publisher")
+        self.get_logger().info("Shutting down gamepad publisher...")
         super().destroy_node()
+
 
 def main(args=None):
     rclpy.init(args=args)
@@ -115,6 +112,7 @@ def main(args=None):
         if 'node' in locals():
             node.destroy_node()
         rclpy.shutdown()
+
 
 if __name__ == '__main__':
     main()
