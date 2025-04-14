@@ -6,7 +6,6 @@ import cv2                          # type: ignore
 import numpy as np                  # type: ignore
 from rclpy.node import Node         # type: ignore
 from std_msgs.msg import String     # type: ignore
-from cv_bridge import CvBridge      # type: ignore
 
 
 class ColorDetectionPublisher(Node):
@@ -14,7 +13,6 @@ class ColorDetectionPublisher(Node):
         super().__init__('color_detection_publisher')
         self.publisher_ = self.create_publisher(String, '/color_info', 10)
         self.timer = self.create_timer(0.1, self.timer_callback)
-        self.cv_bridge = CvBridge()
         
         # su dung camera laptop (thuong la /dev/video0)
         self.cap = cv2.VideoCapture(0)
@@ -28,9 +26,6 @@ class ColorDetectionPublisher(Node):
         if not ret:
             self.get_logger().warning("Failed to capture frame")
             return
-    
-        # Xuất bản khung hình nếu đọc thành công
-        self.publisher_.publish(self.cv_bridge.cv2_to_imgmsg(frame, encoding="bgr8"))
         
         # chuyen sang HSV nhan dien mau sac
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
@@ -57,20 +52,13 @@ class ColorDetectionPublisher(Node):
                 if 500 < area < 1500:
                     x, y, w, h = cv2.boundingRect(cnt)
                     msg = String()
-                    # dinh dang thong tin gui di: "color:yellow,x:100,y:200"
                     msg.data = f"color:{color},x:{x},y:{y}"
                     self.publisher_.publish(msg)
                     self.get_logger().info(f"Detected: {msg.data}")
-                    cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                    
-        # hien thi hinh anh
-        cv2.imshow('Color Detection', frame)
-        cv2.waitKey(1)
     
     def destroy_node(self):
-        self.get_logger().info("Releasing camera and closing windows")
+        self.get_logger().info("Releasing camera")
         self.cap.release()
-        cv2.destroyAllWindows()
         super().destroy_node()
         
 def main(args=None):
