@@ -11,23 +11,30 @@ class RobotArmSubscriber(Node):
         self.subscription = self.create_subscription(String, '/robot_arm_control', self.control_callback, 10)
 
         # ket noi serial voi canh tay robot
-        try:
-            self.ser = serial.Serial('/dev/ttyACM0', 9600, timeout=1) # change baudrate : 9600
-            self.get_logger().info("Serial connection initialized successfully")
-        except serial.SerialException as e:
-            self.get_logger().error(f"Serial connection failed: {e}")
+        ports = ['/dev/ttyACM0', '/dev/ttyACM1', '/dev/ttyUSB0']
+        for port in ports:
+            try:
+                self.ser = serial.Serial(port, 115200, timeout=1)
+                self.get_logger().info(f"Serial connected on {port}")
+                break
+            except serial.SerialException:
+                continue
+        else:
+            self.get_logger().error("No serial ports available")
             raise RuntimeError("Serial connection failed")
         
     def control_callback(self, msg):
         control_data = msg.data
         self.get_logger().info(f'Received: {control_data}')
         
-        # gui du lieu den canh tay robot
-        try:
-            self.ser.write(control_data.encode('utf-8'))
-            self.get_logger().info("Command sent to robot arm")
-        except serial.SerialException as e:
-            self.get_logger().warning(f"Failed to send command: {e}")
+        # gioi han tan so gui serial
+        if not hasattr(self, 'last_send') or (self.get_clock().now().nanoseconds - self.last_send) > 10000000:  # 10ms
+            try:
+                self.ser.write(control_data.encode('utf-8'))
+                self.get_logger().info("Command sent to robot arm")
+                self.last_send = self.get_clock().now().nanoseconds
+            except serial.SerialException as e:
+                self.get_logger().warning(f"Failed to send command: {e}")
     
     def destroy_node(self):
         self.get_logger().info("Closing serial connection")
