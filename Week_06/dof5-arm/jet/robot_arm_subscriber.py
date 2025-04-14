@@ -12,7 +12,7 @@ class RobotArmSubscriber(Node):
 
         # ket noi serial voi canh tay robot
         try:
-            self.ser = serial.Serial('/dev/ttyUSB0', 9600, timeout=1) # change baudrate : 9600
+            self.ser = serial.Serial('/dev/ttyACM0', 9600, timeout=1) # change baudrate : 9600
             self.get_logger().info("Serial connection initialized successfully")
         except serial.SerialException as e:
             self.get_logger().error(f"Serial connection failed: {e}")
