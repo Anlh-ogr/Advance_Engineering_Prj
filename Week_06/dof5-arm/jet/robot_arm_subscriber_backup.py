@@ -5,6 +5,7 @@ import serial                       # type: ignore
 from rclpy.node import Node         # type: ignore
 from std_msgs.msg import String     # type: ignore
 
+
 class RobotArmSubscriber(Node):
     def __init__(self):
         super().__init__('robot_arm_subscriber')
@@ -59,7 +60,6 @@ class RobotArmSubscriber(Node):
             return
         
         # chuyen vi tri (x, y) thanh lenh dieu khien
-        # vi du: dieu chinh base0 dua tren x, base1 dua tren y
         step = 10
         if x < 200:  # vat the ben trai
             self.base0 = max(500, self.base0 - step)
