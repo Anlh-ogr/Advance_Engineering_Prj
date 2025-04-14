@@ -14,6 +14,7 @@ class ColorDetectionPublisher(Node):
         self.publisher_ = self.create_publisher(String, '/color_info', 10)
         self.timer = self.create_timer(0.1, self.timer_callback)
         
+        # su dung camera laptop (thuong la /dev/video0)
         self.cap = cv2.VideoCapture(0)
         if not self.cap.isOpened():
             self.get_logger().error("Failed to open camera")
@@ -30,9 +31,11 @@ class ColorDetectionPublisher(Node):
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         
         # nguong mau sac
-        colors = {'yellow': ([20, 100, 100], [30, 255, 255]),
-                  'green': ([40, 100, 100], [80, 255, 255]),
-                  'pink': ([140, 100, 100], [170, 255, 255])}
+        colors = {
+            'yellow': ([20, 100, 100], [30, 255, 255]),
+            'green': ([40, 100, 100], [80, 255, 255]),
+            'pink': ([140, 100, 100], [170, 255, 255])
+        }
         for color, (lower, upper) in colors.items():
             lower = np.array(lower)
             upper = np.array(upper)
@@ -49,7 +52,8 @@ class ColorDetectionPublisher(Node):
                 if 500 < area < 1500:
                     x, y, w, h = cv2.boundingRect(cnt)
                     msg = String()
-                    msg.data = f"Color: {color}, Area: {area:.2f}, Position: ({x}, {y})"
+                    # dinh dang thong tin gui di: "color:yellow,x:100,y:200"
+                    msg.data = f"color:{color},x:{x},y:{y}"
                     self.publisher_.publish(msg)
                     self.get_logger().info(f"Detected: {msg.data}")
                     cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
