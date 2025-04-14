@@ -10,7 +10,7 @@ class GamePadPublisher(Node):
         self.timer = self.create_timer(0.01, self.timer_callback)    # 100Hz
 
         # 500 - 2500 microseconds (1ms - 2.5ms) | 1500: center (neutral position)
-        self.base0, self.base1, self.base2, self.base3, self.base4, self.base5 = 1500, 1500, 1500, 1500, 1500
+        self.base0, self.base1, self.base2, self.base3, self.base4, self.base5 = 1500, 1500, 1500, 1500, 1500, 1500
         # btn_north(x), btn_west(y), btn_east(b), btn_south(a), abs_hat0x(dpad_x), abs_hat0y(dpad_y)
         self.btn_x, self.btn_y, self.btn_b, self.btn_a, self.dpad_x, self.dpad_y = 0, 0, 0, 0, 0, 0
 
