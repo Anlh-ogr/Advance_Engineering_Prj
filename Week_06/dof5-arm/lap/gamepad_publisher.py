@@ -68,24 +68,27 @@ class GamePadPublisher(Node):
         else:
             self.hold_time_y = 0.0
 
-        # dieu khien servo0 (trai/phai)
-        if self.dpad_x == -1:
-            self.servo0 = max(500, self.servo0 - int(step * hold_multiplier))
-        if self.dpad_x == 1:
-            self.servo0 = min(2500, self.servo0 + int(step * hold_multiplier))
+        # dieu khien servo0 (x + dpad_x)
+        if self.btn_x == 1 and self.dpad_x != 0:
+            self.servo0 = max(500, min(2500, self.servo0 - int(self.dpad_x * step * hold_multiplier)))
 
-        # dieu khien servo1, servo2, servo3 (len/xuong)
+        # dieu khien servo1 (x + dpad_y)
         if self.btn_x == 1 and self.dpad_y != 0:
             self.servo1 = max(500, min(2500, self.servo1 - int(self.dpad_y * step * hold_multiplier)))
+
+        # dieu khien servo2 (y + dpad_y)
         if self.btn_y == 1 and self.dpad_y != 0:
             self.servo2 = max(500, min(2500, self.servo2 - int(self.dpad_y * step * hold_multiplier)))
-        if self.btn_b == 1 and self.dpad_y != 0:
-            self.servo3 = max(500, min(2500, self.servo3 + int(self.dpad_y * step * hold_multiplier)))
 
-        # dieu khien servo5 (gap)
-        if self.btn_a == 1 and (not hasattr(self, 'last_btn_a') or self.last_btn_a != self.btn_a):
-            self.servo5 = 2000 if self.servo5 == 1000 else 1000
-        self.last_btn_a = self.btn_a
+        # dieu khien servo3 (b + dpad_y)
+        if self.btn_b == 1 and self.dpad_y != 0:
+            self.servo3 = max(500, min(2500, self.servo3 - int(self.dpad_y * step * hold_multiplier)))
+
+        # dieu khien servo5 (grip voi nut a)
+        if self.btn_a == 1:
+            self.servo5 = 1000  # gia tri grip (co the dieu chinh)
+        else:
+            self.servo5 = 2000  # gia tri tha grip (co the dieu chinh)
 
         # tao va publish lenh, bao gom servo4 mac dinh
         new_msg = f"#0P{self.servo0}#1P{self.servo1}#2P{self.servo2}#3P{self.servo3}#4P{self.servo4}#5P{self.servo5}\r\n"
