@@ -10,7 +10,7 @@ class GamePadPublisher(Node):
         self.publisher_ = self.create_publisher(String, '/robot_arm_control', 10)
         self.timer = self.create_timer(0.01, self.timer_callback)  # 100Hz
 
-        # khoi tao servo, giu servo4 mac dinh de du phong
+        # khoi tao servo
         self.servo0 = self.servo1 = self.servo2 = self.servo3 = self.servo4 = self.servo5 = 1500
         # nut gamepad
         self.btn_x, self.btn_y, self.btn_b, self.btn_a, self.dpad_x, self.dpad_y = 0, 0, 0, 0, 0, 0
@@ -86,11 +86,11 @@ class GamePadPublisher(Node):
 
         # dieu khien servo5 (grip voi nut a)
         if self.btn_a == 1:
-            self.servo5 = 1000  # gia tri grip (co the dieu chinh)
+            self.servo5 = 1000  # grip
         else:
-            self.servo5 = 2000  # gia tri tha grip (co the dieu chinh)
+            self.servo5 = 2000  # tha grip
 
-        # tao va publish lenh, bao gom servo4 mac dinh
+        # tao va publish lenh
         new_msg = f"#0P{self.servo0}#1P{self.servo1}#2P{self.servo2}#3P{self.servo3}#4P{self.servo4}#5P{self.servo5}\r\n"
         if not hasattr(self, 'last_msg') or self.last_msg != new_msg:
             msg = String()
