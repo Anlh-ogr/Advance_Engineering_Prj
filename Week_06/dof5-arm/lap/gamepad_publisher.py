@@ -13,7 +13,7 @@ class GamePadPublisher(Node):
         # khoi tao servo
         self.servo0 = self.servo1 = self.servo2 = self.servo3 = self.servo4 = self.servo5 = 1500
         # nut gamepad
-        self.btn_x, self.btn_y, self.btn_b, self.btn_a, self.dpad_y, self.tl = 0, 0, 0, 0, 0, 0      
+        self.btn_x, self.btn_y, self.btn_b, self.tr, self.dpad_y, self.tl = 0, 0, 0, 0, 0, 0      
         self.get_logger().info("Gamepad publisher initialized")
 
     def timer_callback(self):
@@ -36,8 +36,8 @@ class GamePadPublisher(Node):
                     self.btn_y = event.state
                 if event.code == "BTN_EAST":
                     self.btn_b = event.state
-                if event.code == "BTN_SOUTH":
-                    self.btn_a = event.state
+                if event.code == "BTN_TR":
+                    self.tr = event.state
         
         step = 60
 
@@ -54,7 +54,7 @@ class GamePadPublisher(Node):
             self.servo2 = max(500, min(2500, self.servo2 - int(self.dpad_y * step)))
 
         # dieu khien servo3 (a + dpad_y)
-        if self.btn_a == 1 and self.dpad_y != 0:
+        if self.tr == 1 and self.dpad_y != 0:
             self.servo3 = max(500, min(2500, self.servo3 - int(self.dpad_y * step)))
 
         # dieu khien servo5 (gripper voi tl)
