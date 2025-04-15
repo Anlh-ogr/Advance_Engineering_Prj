@@ -13,7 +13,7 @@ class GamePadPublisher(Node):
         # khoi tao servo
         self.servo0 = self.servo1 = self.servo2 = self.servo3 = self.servo4 = self.servo5 = 1500
         # nut gamepad
-        self.btn_x, self.btn_y, self.btn_b, self.btn_a, self.dpad_x, self.dpad_y = 0, 0, 0, 0, 0, 0
+        self.btn_x, self.btn_y, self.btn_b, self.btn_a, self.dpad_y, self.tl = 0, 0, 0, 0, 0, 0      
         self.get_logger().info("Gamepad publisher initialized")
 
     def timer_callback(self):
@@ -26,8 +26,8 @@ class GamePadPublisher(Node):
         
         for event in events:
             if event.ev_type in ["Key", "Absolute"]:
-                if event.code == "ABS_HAT0X":
-                    self.dpad_x = event.state
+                if event.code == "BTN_TL":
+                    self.tl = event.state
                 if event.code == "ABS_HAT0Y":
                     self.dpad_y = event.state
                 if event.code == "BTN_WEST":
@@ -40,52 +40,25 @@ class GamePadPublisher(Node):
                     self.btn_a = event.state
         
         step = 60
-        hold_multiplier = 1.0
 
-        # xu ly hold dpad_x
-        if self.dpad_x != getattr(self, 'last_dpad_x', 0):
-            self.hold_time_x = 0.0
-        self.last_dpad_x = self.dpad_x
-        if self.dpad_x != 0:
-            if not hasattr(self, 'hold_time_x'):
-                self.hold_time_x = 0.0
-            self.hold_time_x += 1
-            if self.hold_time_x > 50:
-                hold_multiplier = 2.0
-        else:
-            self.hold_time_x = 0.0
-
-        # xu ly hold dpad_y
-        if self.dpad_y != getattr(self, 'last_dpad_y', 0):
-            self.hold_time_y = 0.0
-        self.last_dpad_y = self.dpad_y
-        if self.dpad_y != 0:
-            if not hasattr(self, 'hold_time_y'):
-                self.hold_time_y = 0.0
-            self.hold_time_y += 1
-            if self.hold_time_y > 50:
-                hold_multiplier = 2.0
-        else:
-            self.hold_time_y = 0.0
-
-        # dieu khien servo0 (x + dpad_x)
-        if self.btn_x == 1 and self.dpad_x != 0:
-            self.servo0 = max(500, min(2500, self.servo0 - int(self.dpad_x * step * hold_multiplier)))
-
-        # dieu khien servo1 (x + dpad_y)
+        # dieu khien servo0 (x + dpad_y)
         if self.btn_x == 1 and self.dpad_y != 0:
-            self.servo1 = max(500, min(2500, self.servo1 - int(self.dpad_y * step * hold_multiplier)))
+            self.servo0 = max(500, min(2500, self.servo0 - int(self.dpad_y * step)))
 
-        # dieu khien servo2 (y + dpad_y)
+        # dieu khien servo1 (y + dpad_y)
         if self.btn_y == 1 and self.dpad_y != 0:
-            self.servo2 = max(500, min(2500, self.servo2 - int(self.dpad_y * step * hold_multiplier)))
+            self.servo1 = max(500, min(2500, self.servo1 - int(self.dpad_y * step)))
 
-        # dieu khien servo3 (b + dpad_y)
+        # dieu khien servo2 (b + dpad_y)
         if self.btn_b == 1 and self.dpad_y != 0:
-            self.servo3 = max(500, min(2500, self.servo3 - int(self.dpad_y * step * hold_multiplier)))
+            self.servo2 = max(500, min(2500, self.servo2 - int(self.dpad_y * step)))
 
-        # dieu khien servo5 (grip voi nut a)
-        if self.btn_a == 1:
+        # dieu khien servo3 (a + dpad_y)
+        if self.btn_a == 1 and self.dpad_y != 0:
+            self.servo3 = max(500, min(2500, self.servo3 - int(self.dpad_y * step)))
+
+        # dieu khien servo5 (gripper voi tl)
+        if self.tl == 1:
             self.servo5 = 1000  # grip
         else:
             self.servo5 = 2000  # tha grip
