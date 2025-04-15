@@ -9,10 +9,10 @@ class GamePadPublisher(Node):
     def __init__(self):
         super().__init__('gamepad_publisher')
         self.publisher_ = self.create_publisher(String, '/robot_arm_control', 10)
-        self.timer = self.create_timer(0.01, self.timer_callback)  # 100Hz
+        self.timer = self.create_timer(0.02, self.timer_callback) # 50Hz
 
         # khoi tao servo
-        self.servo0 = self.servo1 = self.servo2 = self.servo3 = self.servo4 = self.servo5 = 1500
+        self.servo0 , self.servo1 , self.servo2 , self.servo3 , self.servo4 , self.servo5 = 1500, 1500, 1500, 1500, 1500, 1500
         # nut gamepad
         self.btn_x, self.btn_b, self.tr, self.dpad_y, self.tl, self.tl2, self.tr2 = 0, 0, 0, 0, 0, 0, 0   
         self.get_logger().info("Gamepad publisher initialized")
