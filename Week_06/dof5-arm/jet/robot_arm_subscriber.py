@@ -27,15 +27,17 @@ class RobotArmSubscriber(Node):
         control_data = msg.data
         self.get_logger().info(f'Received: {control_data}')
         
-        # gioi han tan so gui serial
-        if not hasattr(self, 'last_send') or (self.get_clock().now().nanoseconds - self.last_send) > 10000000:  # 10ms
+        if control_data.startswith('#0P') and control_data.endswith('\r\n'):
+            # gioi han tan so gui serial
             try:
                 self.ser.write(control_data.encode('utf-8'))
                 self.get_logger().info("Command sent to robot arm")
                 self.last_send = self.get_clock().now().nanoseconds
             except serial.SerialException as e:
-                self.get_logger().warning(f"Failed to send command: {e}")
-    
+                self.get_logger().warning(f"failed to send command: {e}")
+        else:
+            self.get_logger().warning(f"Invalid command format: {control_data}")
+                
     def destroy_node(self):
         self.get_logger().info("Closing serial connection")
         self.ser.close()
